@@ -1,201 +1,208 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useAppContext } from '../context/AppContext';
 
 export default function Reports() {
-  const { customers, quotations, invoices, followUps } = useApp();
-  const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const { quotations, invoices, customers, followUps } = useAppContext();
+  const [period, setPeriod] = useState('month');
 
-  // Generate data
+  const totalRevenue = invoices.filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + i.total, 0);
+  const totalPending = invoices.filter((i: any) => i.status !== 'paid').reduce((s: number, i: any) => s + i.total, 0);
+  const quoteConversion = quotations.length > 0 ? Math.round((quotations.filter((q: any) => q.status === 'accepted').length / quotations.length) * 100) : 0;
+  const avgQuoteValue = quotations.length > 0 ? Math.round(quotations.reduce((s: number, q: any) => s + q.total, 0) / quotations.length) : 0;
+
   const monthlyData = [
-    { name: 'Aug', revenue: 3200, expenses: 1800, profit: 1400 },
-    { name: 'Sep', revenue: 4200, expenses: 2100, profit: 2100 },
-    { name: 'Oct', revenue: 5800, expenses: 2400, profit: 3400 },
-    { name: 'Nov', revenue: 7200, expenses: 2800, profit: 4400 },
-    { name: 'Dec', revenue: 6100, expenses: 2600, profit: 3500 },
-    { name: 'Jan', revenue: 8400, expenses: 3000, profit: 5400 },
+    { month: 'Oct', revenue: 8500, expenses: 4200, quotes: 5 },
+    { month: 'Nov', revenue: 12000, expenses: 5100, quotes: 7 },
+    { month: 'Dec', revenue: 9800, expenses: 4800, quotes: 4 },
+    { month: 'Jan', revenue: 15000, expenses: 6200, quotes: 8 },
+    { month: 'Feb', revenue: 11500, expenses: 5500, quotes: 6 },
+    { month: 'Mar', revenue: 14200, expenses: 5800, quotes: 9 },
   ];
 
-  const customerGrowth = [
-    { name: 'Aug', customers: 8 },
-    { name: 'Sep', customers: 12 },
-    { name: 'Oct', customers: 15 },
-    { name: 'Nov', customers: 18 },
-    { name: 'Dec', customers: 20 },
-    { name: 'Jan', customers: customers.length },
-  ];
+  const maxRevenue = Math.max(...monthlyData.map(d => d.revenue));
 
-  const quotationConversion = [
-    { name: 'Aug', sent: 5, accepted: 3 },
-    { name: 'Sep', sent: 7, accepted: 4 },
-    { name: 'Oct', sent: 8, accepted: 6 },
-    { name: 'Nov', sent: 6, accepted: 4 },
-    { name: 'Dec', sent: 9, accepted: 5 },
-    { name: 'Jan', sent: quotations.length, accepted: quotations.filter(q => q.status === 'accepted').length },
+  const topCustomers = [
+    { name: 'TechCorp Inc.', revenue: 11500, projects: 3 },
+    { name: 'Design Studio', revenue: 4500, projects: 2 },
+    { name: 'Marketing Co.', revenue: 8500, projects: 4 },
+    { name: 'Startup.io', revenue: 8000, projects: 1 },
   ];
-
-  const totalRevenue = invoices.reduce((s, i) => s + i.total, 0);
-  const paidRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.total, 0);
-  const avgInvoiceValue = invoices.length > 0 ? totalRevenue / invoices.length : 0;
-  const conversionRate = quotations.length > 0 ? (quotations.filter(q => q.status === 'accepted').length / quotations.length * 100) : 0;
-  const followUpCompletion = followUps.length > 0 ? (followUps.filter(f => f.status === 'completed').length / followUps.length * 100) : 0;
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h5 className="fw-bold mb-1">Reports & Analytics</h5>
-          <p className="text-muted small mb-0">Business performance insights and trends</p>
+          <h4 className="fw-bold mb-1">Reports & Analytics</h4>
+          <p className="text-muted mb-0">Business performance insights</p>
         </div>
         <div className="d-flex gap-2">
-          {(['month', 'quarter', 'year'] as const).map(p => (
-            <button key={p} className={`btn btn-sm ${period === p ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setPeriod(p)}>
-              {p.charAt(0).toUpperCase() + p.slice(1)}
-            </button>
-          ))}
+          <select className="form-select form-select-sm" style={{ width: 'auto' }} value={period} onChange={e => setPeriod(e.target.value)}>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+            <option value="year">This Year</option>
+          </select>
+          <button className="btn btn-sm btn-outline-primary"><i className="fas fa-download me-1"></i>Export</button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-6 col-xl-3">
-          <div className="card stat-card">
-            <div className="card-body">
-              <small className="text-muted">Total Revenue</small>
-              <h4 className="fw-bold mb-1">${totalRevenue.toLocaleString()}</h4>
-              <small className="text-success"><i className="bi bi-arrow-up"></i> 18% growth</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-xl-3">
-          <div className="card stat-card">
-            <div className="card-body">
-              <small className="text-muted">Collected</small>
-              <h4 className="fw-bold mb-1">${paidRevenue.toLocaleString()}</h4>
-              <small className="text-muted">{totalRevenue > 0 ? Math.round(paidRevenue / totalRevenue * 100) : 0}% collection rate</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-xl-3">
-          <div className="card stat-card">
-            <div className="card-body">
-              <small className="text-muted">Avg. Invoice</small>
-              <h4 className="fw-bold mb-1">${Math.round(avgInvoiceValue).toLocaleString()}</h4>
-              <small className="text-muted">{invoices.length} total invoices</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6 col-xl-3">
-          <div className="card stat-card">
-            <div className="card-body">
-              <small className="text-muted">Conversion Rate</small>
-              <h4 className="fw-bold mb-1">{conversionRate.toFixed(0)}%</h4>
-              <small className="text-muted">Quotation acceptance</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts */}
+      {/* Key Metrics */}
       <div className="row g-4 mb-4">
+        <div className="col-lg-3 col-md-6">
+          <div className="stat-card">
+            <small className="text-muted">Total Revenue</small>
+            <h4 className="fw-bold mt-1">${totalRevenue.toLocaleString()}</h4>
+            <div className="d-flex align-items-center mt-2">
+              <span className="badge bg-success bg-opacity-10 text-success me-2"><i className="fas fa-arrow-up"></i> 12.5%</span>
+              <small className="text-muted">vs last period</small>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-3 col-md-6">
+          <div className="stat-card">
+            <small className="text-muted">Pending Amount</small>
+            <h4 className="fw-bold mt-1">${totalPending.toLocaleString()}</h4>
+            <div className="d-flex align-items-center mt-2">
+              <span className="badge bg-warning bg-opacity-10 text-warning me-2">{invoices.filter((i: any) => i.status === 'overdue').length} overdue</span>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-3 col-md-6">
+          <div className="stat-card">
+            <small className="text-muted">Quote Conversion</small>
+            <h4 className="fw-bold mt-1">{quoteConversion}%</h4>
+            <div className="progress mt-2" style={{ height: 6 }}>
+              <div className="progress-bar bg-success" style={{ width: `${quoteConversion}%` }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-3 col-md-6">
+          <div className="stat-card">
+            <small className="text-muted">Avg. Quote Value</small>
+            <h4 className="fw-bold mt-1">${avgQuoteValue.toLocaleString()}</h4>
+            <div className="d-flex align-items-center mt-2">
+              <span className="badge bg-info bg-opacity-10 text-info me-2">{quotations.length} total quotes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="row g-4">
+        {/* Revenue Chart */}
         <div className="col-lg-8">
-          <div className="chart-container">
-            <h6 className="fw-bold mb-3">Revenue & Profit Trend</h6>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" stroke="#999" fontSize={12} />
-                <YAxis stroke="#999" fontSize={12} />
-                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
-                <Area type="monotone" dataKey="revenue" stroke="#667eea" fill="rgba(102, 126, 234, 0.1)" strokeWidth={2} />
-                <Area type="monotone" dataKey="profit" stroke="#28a745" fill="rgba(40, 167, 69, 0.1)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-            <div className="d-flex gap-3 mt-2">
-              <div className="d-flex align-items-center gap-1"><div style={{ width: 12, height: 3, background: '#667eea', borderRadius: 2 }}></div><small>Revenue</small></div>
-              <div className="d-flex align-items-center gap-1"><div style={{ width: 12, height: 3, background: '#28a745', borderRadius: 2 }}></div><small>Profit</small></div>
+          <div className="card-custom">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <span>Revenue Trend</span>
+              <div className="d-flex gap-3">
+                <span className="d-flex align-items-center gap-1"><span style={{ width: 12, height: 12, borderRadius: 3, background: 'var(--primary)' }}></span><small>Revenue</small></span>
+                <span className="d-flex align-items-center gap-1"><span style={{ width: 12, height: 12, borderRadius: 3, background: '#e2e8f0' }}></span><small>Expenses</small></span>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="d-flex align-items-end gap-3" style={{ height: 220 }}>
+                {monthlyData.map((d, i) => (
+                  <div key={i} className="flex-fill d-flex flex-column align-items-center" style={{ height: '100%' }}>
+                    <div className="d-flex gap-1 align-items-end flex-fill w-100 justify-content-center">
+                      <div style={{ width: '35%', maxWidth: 30, height: `${(d.revenue / maxRevenue) * 100}%`, background: 'var(--primary)', borderRadius: '4px 4px 0 0' }} title={`Revenue: $${d.revenue.toLocaleString()}`}></div>
+                      <div style={{ width: '35%', maxWidth: 30, height: `${(d.expenses / maxRevenue) * 100}%`, background: '#e2e8f0', borderRadius: '4px 4px 0 0' }} title={`Expenses: $${d.expenses.toLocaleString()}`}></div>
+                    </div>
+                    <small className="text-muted mt-2" style={{ fontSize: '0.75rem' }}>{d.month}</small>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Top Customers */}
         <div className="col-lg-4">
-          <div className="chart-container h-100">
-            <h6 className="fw-bold mb-3">Customer Growth</h6>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={customerGrowth}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" stroke="#999" fontSize={12} />
-                <YAxis stroke="#999" fontSize={12} />
-                <Tooltip />
-                <Line type="monotone" dataKey="customers" stroke="#6f42c1" strokeWidth={2} dot={{ fill: '#6f42c1', r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="card-custom h-100">
+            <div className="card-header">Top Customers by Revenue</div>
+            <div className="p-3">
+              {topCustomers.map((c, idx) => (
+                <div key={idx} className="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom" style={{ borderColor: '#f1f5f9 !important' }}>
+                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: `hsl(${idx * 80}, 70%, 90%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="fw-bold" style={{ fontSize: '0.8rem', color: `hsl(${idx * 80}, 70%, 40%)` }}>{idx + 1}</span>
+                  </div>
+                  <div className="flex-grow-1">
+                    <h6 className="mb-0" style={{ fontSize: '0.9rem' }}>{c.name}</h6>
+                    <small className="text-muted">{c.projects} projects</small>
+                  </div>
+                  <strong style={{ color: 'var(--primary)' }}>${c.revenue.toLocaleString()}</strong>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="row g-4 mb-4">
+      {/* Additional Stats */}
+      <div className="row g-4 mt-2">
         <div className="col-lg-6">
-          <div className="chart-container">
-            <h6 className="fw-bold mb-3">Quotation Conversion</h6>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={quotationConversion}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="name" stroke="#999" fontSize={12} />
-                <YAxis stroke="#999" fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="sent" fill="#ffc107" radius={[4, 4, 0, 0]} name="Sent" />
-                <Bar dataKey="accepted" fill="#28a745" radius={[4, 4, 0, 0]} name="Accepted" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="card-custom">
+            <div className="card-header">Customer Distribution</div>
+            <div className="p-4">
+              <div className="d-flex justify-content-around align-items-center">
+                <div className="text-center">
+                  <div style={{ width: 100, height: 100, borderRadius: '50%', border: '8px solid #10b981', borderRightColor: '#e2e8f0', borderBottomColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                    <span className="fw-bold">{customers.filter((c: any) => c.status === 'active').length}</span>
+                  </div>
+                  <small className="text-muted mt-2 d-block">Active</small>
+                </div>
+                <div className="text-center">
+                  <div style={{ width: 100, height: 100, borderRadius: '50%', border: '8px solid #06b6d4', borderRightColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                    <span className="fw-bold">{customers.filter((c: any) => c.status === 'lead').length}</span>
+                  </div>
+                  <small className="text-muted mt-2 d-block">Leads</small>
+                </div>
+                <div className="text-center">
+                  <div style={{ width: 100, height: 100, borderRadius: '50%', border: '8px solid #94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                    <span className="fw-bold">{customers.filter((c: any) => c.status === 'inactive').length}</span>
+                  </div>
+                  <small className="text-muted mt-2 d-block">Inactive</small>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div className="col-lg-6">
-          <div className="chart-container">
-            <h6 className="fw-bold mb-3">Performance Metrics</h6>
-            <div className="mt-4">
-              <div className="mb-4">
+          <div className="card-custom">
+            <div className="card-header">Follow-up Performance</div>
+            <div className="p-4">
+              <div className="mb-3">
                 <div className="d-flex justify-content-between mb-1">
-                  <small className="fw-medium">Follow-up Completion</small>
-                  <small className="fw-bold">{followUpCompletion.toFixed(0)}%</small>
+                  <small>Calls</small>
+                  <small>{followUps.filter((f: any) => f.type === 'call').length} total</small>
                 </div>
-                <div className="progress-custom">
-                  <div className="progress-bar" style={{ width: `${followUpCompletion}%`, background: 'linear-gradient(90deg, #667eea, #764ba2)' }}></div>
+                <div className="progress" style={{ height: 8 }}>
+                  <div className="progress-bar bg-success" style={{ width: '60%' }}></div>
                 </div>
               </div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="d-flex justify-content-between mb-1">
-                  <small className="fw-medium">Invoice Collection Rate</small>
-                  <small className="fw-bold">{totalRevenue > 0 ? Math.round(paidRevenue / totalRevenue * 100) : 0}%</small>
+                  <small>Emails</small>
+                  <small>{followUps.filter((f: any) => f.type === 'email').length} total</small>
                 </div>
-                <div className="progress-custom">
-                  <div className="progress-bar bg-success" style={{ width: `${totalRevenue > 0 ? paidRevenue / totalRevenue * 100 : 0}%` }}></div>
+                <div className="progress" style={{ height: 8 }}>
+                  <div className="progress-bar bg-primary" style={{ width: '80%' }}></div>
                 </div>
               </div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <div className="d-flex justify-content-between mb-1">
-                  <small className="fw-medium">Customer Retention</small>
-                  <small className="fw-bold">{customers.length > 0 ? Math.round(customers.filter(c => c.status === 'active').length / customers.length * 100) : 0}%</small>
+                  <small>Meetings</small>
+                  <small>{followUps.filter((f: any) => f.type === 'meeting').length} total</small>
                 </div>
-                <div className="progress-custom">
-                  <div className="progress-bar bg-info" style={{ width: `${customers.length > 0 ? customers.filter(c => c.status === 'active').length / customers.length * 100 : 0}%` }}></div>
-                </div>
-              </div>
-              <div className="mb-4">
-                <div className="d-flex justify-content-between mb-1">
-                  <small className="fw-medium">Quotation Win Rate</small>
-                  <small className="fw-bold">{conversionRate.toFixed(0)}%</small>
-                </div>
-                <div className="progress-custom">
-                  <div className="progress-bar bg-warning" style={{ width: `${conversionRate}%` }}></div>
+                <div className="progress" style={{ height: 8 }}>
+                  <div className="progress-bar bg-warning" style={{ width: '40%' }}></div>
                 </div>
               </div>
               <div>
                 <div className="d-flex justify-content-between mb-1">
-                  <small className="fw-medium">AI Credits Usage</small>
-                  <small className="fw-bold">23%</small>
+                  <small>Tasks</small>
+                  <small>{followUps.filter((f: any) => f.type === 'task').length} total</small>
                 </div>
-                <div className="progress-custom">
-                  <div className="progress-bar" style={{ width: '23%', background: 'linear-gradient(90deg, #00d2ff, #3a7bd5)' }}></div>
+                <div className="progress" style={{ height: 8 }}>
+                  <div className="progress-bar bg-info" style={{ width: '70%' }}></div>
                 </div>
               </div>
             </div>

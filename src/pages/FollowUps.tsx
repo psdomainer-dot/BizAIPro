@@ -1,94 +1,77 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
 
 export default function FollowUps() {
-  const { followUps, customers, addFollowUp, updateFollowUp, deleteFollowUp } = useApp();
+  const { followUps, customers, addFollowUp, toggleFollowUp } = useAppContext();
   const [showModal, setShowModal] = useState(false);
-  const [filter, setFilter] = useState<string>('all');
-  const [formData, setFormData] = useState({
-    customerId: '', type: 'call' as 'call' | 'email' | 'meeting' | 'task',
-    subject: '', description: '', dueDate: ''
-  });
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [newFollowUp, setNewFollowUp] = useState({ customer: '', type: 'call' as const, subject: '', notes: '', date: '' });
 
-  const filtered = filter === 'all' ? followUps : followUps.filter(f => f.status === filter);
+  const filtered = followUps.filter((f: any) => {
+    if (filter === 'pending') return !f.completed;
+    if (filter === 'completed') return f.completed;
+    return true;
+  }).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const customer = customers.find(c => c.id === formData.customerId);
-    addFollowUp({
-      id: String(Date.now()),
-      customerId: formData.customerId,
-      customerName: customer?.name || '',
-      type: formData.type,
-      subject: formData.subject,
-      description: formData.description,
-      dueDate: formData.dueDate,
-      status: 'pending',
-      createdAt: new Date().toISOString().split('T')[0]
-    });
+  const handleCreate = () => {
+    addFollowUp({ id: Date.now().toString(), ...newFollowUp, completed: false });
     setShowModal(false);
-    setFormData({ customerId: '', type: 'call', subject: '', description: '', dueDate: '' });
+    setNewFollowUp({ customer: '', type: 'call', subject: '', notes: '', date: '' });
   };
 
-  const getTypeIcon = (type: string) => {
-    const icons: Record<string, string> = { call: 'bi-telephone', email: 'bi-envelope', meeting: 'bi-camera-video', task: 'bi-check2-square' };
-    const colors: Record<string, string> = { call: '#0d6efd', email: '#6f42c1', meeting: '#20c997', task: '#fd7e14' };
-    return <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: 40, height: 40, background: `${colors[type]}20`, color: colors[type] }}><i className={`bi ${icons[type]}`}></i></div>;
+  const typeIcons: Record<string, { icon: string; color: string }> = {
+    call: { icon: 'fas fa-phone', color: '#10b981' },
+    email: { icon: 'fas fa-envelope', color: '#4f46e5' },
+    meeting: { icon: 'fas fa-handshake', color: '#f59e0b' },
+    task: { icon: 'fas fa-clipboard-list', color: '#06b6d4' }
   };
 
-  const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = { pending: 'warning', completed: 'success', overdue: 'danger' };
-    return <span className={`badge bg-${colors[status]} badge-status`}>{status}</span>;
-  };
-
-  const today = new Date().toISOString().split('T')[0];
-  const pendingCount = followUps.filter(f => f.status === 'pending').length;
-  const overdueCount = followUps.filter(f => f.status === 'pending' && f.dueDate < today).length;
-  const completedToday = followUps.filter(f => f.status === 'completed').length;
+  const pendingCount = followUps.filter((f: any) => !f.completed).length;
+  const completedCount = followUps.filter((f: any) => f.completed).length;
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h5 className="fw-bold mb-1">Follow-ups</h5>
-          <p className="text-muted small mb-0">Stay on top of your customer communications</p>
+          <h4 className="fw-bold mb-1">Follow-ups</h4>
+          <p className="text-muted mb-0">Stay on top of your customer interactions</p>
         </div>
-        <button className="btn btn-primary d-flex align-items-center gap-2" onClick={() => setShowModal(true)}>
-          <i className="bi bi-plus-lg"></i> New Follow-up
+        <button className="btn btn-primary-custom" onClick={() => setShowModal(true)}>
+          <i className="fas fa-plus me-2"></i>New Follow-up
         </button>
       </div>
 
       {/* Stats */}
       <div className="row g-3 mb-4">
         <div className="col-md-4">
-          <div className="card stat-card">
-            <div className="card-body d-flex align-items-center gap-3">
-              <div className="stat-icon" style={{ background: 'rgba(255, 193, 7, 0.1)', color: '#ffc107' }}><i className="bi bi-clock"></i></div>
+          <div className="stat-card">
+            <div className="d-flex align-items-center gap-3">
+              <div className="icon" style={{ background: '#fef2f2', color: '#ef4444' }}><i className="fas fa-exclamation-circle"></i></div>
               <div><small className="text-muted">Pending</small><h5 className="mb-0 fw-bold">{pendingCount}</h5></div>
             </div>
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card stat-card">
-            <div className="card-body d-flex align-items-center gap-3">
-              <div className="stat-icon" style={{ background: 'rgba(220, 53, 69, 0.1)', color: '#dc3545' }}><i className="bi bi-exclamation-circle"></i></div>
-              <div><small className="text-muted">Overdue</small><h5 className="mb-0 fw-bold">{overdueCount}</h5></div>
+          <div className="stat-card">
+            <div className="d-flex align-items-center gap-3">
+              <div className="icon" style={{ background: '#ecfdf5', color: '#10b981' }}><i className="fas fa-check-circle"></i></div>
+              <div><small className="text-muted">Completed</small><h5 className="mb-0 fw-bold">{completedCount}</h5></div>
             </div>
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card stat-card">
-            <div className="card-body d-flex align-items-center gap-3">
-              <div className="stat-icon" style={{ background: 'rgba(40, 167, 69, 0.1)', color: '#28a745' }}><i className="bi bi-check-circle"></i></div>
-              <div><small className="text-muted">Completed</small><h5 className="mb-0 fw-bold">{completedToday}</h5></div>
+          <div className="stat-card">
+            <div className="d-flex align-items-center gap-3">
+              <div className="icon" style={{ background: '#eef2ff', color: '#4f46e5' }}><i className="fas fa-percentage"></i></div>
+              <div><small className="text-muted">Completion Rate</small><h5 className="mb-0 fw-bold">{followUps.length > 0 ? Math.round((completedCount / followUps.length) * 100) : 0}%</h5></div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="d-flex gap-2 mb-3">
-        {['all', 'pending', 'completed', 'overdue'].map(f => (
+      {/* Filter */}
+      <div className="d-flex gap-2 mb-4">
+        {(['all', 'pending', 'completed'] as const).map(f => (
           <button key={f} className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setFilter(f)}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
@@ -96,95 +79,64 @@ export default function FollowUps() {
       </div>
 
       {/* Follow-up List */}
-      <div className="card table-card">
-        <div className="card-body p-0">
+      <div className="card-custom">
+        <div className="p-3">
           {filtered.length === 0 ? (
             <div className="text-center py-5 text-muted">
-              <i className="bi bi-bell-slash fs-1 d-block mb-2"></i>
+              <i className="fas fa-inbox fa-3x mb-3 d-block"></i>
               <p>No follow-ups found</p>
             </div>
           ) : (
-            <div className="list-group list-group-flush">
-              {filtered.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map(followUp => (
-                <div key={followUp.id} className="list-group-item p-3 border-0 border-bottom">
-                  <div className="d-flex align-items-start gap-3">
-                    {getTypeIcon(followUp.type)}
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between align-items-start">
-                        <div>
-                          <h6 className="mb-1 fw-bold">{followUp.subject}</h6>
-                          <small className="text-muted"><i className="bi bi-person me-1"></i>{followUp.customerName}</small>
-                        </div>
-                        {getStatusBadge(followUp.status)}
-                      </div>
-                      <p className="small text-muted mt-1 mb-2">{followUp.description}</p>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <small className="text-muted"><i className="bi bi-calendar me-1"></i>Due: {followUp.dueDate}</small>
-                        <div className="d-flex gap-1">
-                          {followUp.status === 'pending' && (
-                            <button className="btn btn-sm btn-outline-success" onClick={() => updateFollowUp(followUp.id, { status: 'completed' })}>
-                              <i className="bi bi-check-lg"></i> Complete
-                            </button>
-                          )}
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => deleteFollowUp(followUp.id)}>
-                            <i className="bi bi-trash"></i>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            filtered.map((f: any) => (
+              <div key={f.id} className={`d-flex align-items-start gap-3 p-3 mb-2 rounded ${f.completed ? 'opacity-50' : ''}`} style={{ background: '#f8fafc' }}>
+                <div>
+                  <input type="checkbox" className="form-check-input mt-1" checked={f.completed} onChange={() => toggleFollowUp(f.id)} />
                 </div>
-              ))}
-            </div>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: `${typeIcons[f.type].color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <i className={typeIcons[f.type].icon} style={{ color: typeIcons[f.type].color }}></i>
+                </div>
+                <div className="flex-grow-1">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 className="mb-1 fw-bold" style={{ textDecoration: f.completed ? 'line-through' : 'none' }}>{f.subject}</h6>
+                      <small className="text-muted">{f.customer}</small>
+                    </div>
+                    <span className="badge bg-light text-dark">{f.date}</span>
+                  </div>
+                  {f.notes && <p className="mb-0 mt-1" style={{ fontSize: '0.85rem', color: '#64748b' }}>{f.notes}</p>}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
 
       {/* Create Modal */}
       {showModal && (
-        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
+        <div className="modal d-block" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">New Follow-up</h5>
-                <button className="btn-close" onClick={() => setShowModal(false)}></button>
+              <div className="modal-header"><h5 className="modal-title">New Follow-up</h5><button className="btn-close" onClick={() => setShowModal(false)}></button></div>
+              <div className="modal-body">
+                <div className="mb-3"><label className="form-label">Customer</label>
+                  <select className="form-select" value={newFollowUp.customer} onChange={e => setNewFollowUp(p => ({ ...p, customer: e.target.value }))}>
+                    <option value="">Select customer...</option>
+                    {customers.map((c: any) => <option key={c.id} value={c.company}>{c.company}</option>)}
+                  </select>
+                </div>
+                <div className="mb-3"><label className="form-label">Type</label>
+                  <select className="form-select" value={newFollowUp.type} onChange={e => setNewFollowUp(p => ({ ...p, type: e.target.value as any }))}>
+                    <option value="call">Phone Call</option><option value="email">Email</option><option value="meeting">Meeting</option><option value="task">Task</option>
+                  </select>
+                </div>
+                <div className="mb-3"><label className="form-label">Subject</label><input className="form-control" value={newFollowUp.subject} onChange={e => setNewFollowUp(p => ({ ...p, subject: e.target.value }))} /></div>
+                <div className="mb-3"><label className="form-label">Notes</label><textarea className="form-control" rows={3} value={newFollowUp.notes} onChange={e => setNewFollowUp(p => ({ ...p, notes: e.target.value }))}></textarea></div>
+                <div className="mb-3"><label className="form-label">Date</label><input type="date" className="form-control" value={newFollowUp.date} onChange={e => setNewFollowUp(p => ({ ...p, date: e.target.value }))} /></div>
               </div>
-              <form onSubmit={handleSubmit}>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Customer *</label>
-                    <select className="form-select" required value={formData.customerId} onChange={e => setFormData(prev => ({ ...prev, customerId: e.target.value }))}>
-                      <option value="">Select customer...</option>
-                      {customers.map(c => <option key={c.id} value={c.id}>{c.name} - {c.company}</option>)}
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Type *</label>
-                    <select className="form-select" value={formData.type} onChange={e => setFormData(prev => ({ ...prev, type: e.target.value as any }))}>
-                      <option value="call">Phone Call</option>
-                      <option value="email">Email</option>
-                      <option value="meeting">Meeting</option>
-                      <option value="task">Task</option>
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Subject *</label>
-                    <input type="text" className="form-control" required value={formData.subject} onChange={e => setFormData(prev => ({ ...prev, subject: e.target.value }))} />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <textarea className="form-control" rows={3} value={formData.description} onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}></textarea>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Due Date *</label>
-                    <input type="date" className="form-control" required value={formData.dueDate} onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Create Follow-up</button>
-                </div>
-              </form>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button className="btn btn-primary-custom" onClick={handleCreate}>Create Follow-up</button>
+              </div>
             </div>
           </div>
         </div>

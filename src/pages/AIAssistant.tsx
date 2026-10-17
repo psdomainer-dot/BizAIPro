@@ -1,142 +1,170 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
-
-const aiResponses: Record<string, string> = {
-  'quotation': 'Based on your recent quotation data:\n\n• You have 3 active quotations totaling $36,000\n• Q-002 (Brand Identity) has been accepted - great job!\n• Q-001 (Website Redesign) was sent and is awaiting response\n• Q-003 (Mobile App) is still in draft\n\n💡 Tip: Follow up on Q-001 within 48 hours to increase conversion chances. Studies show quotations followed up within 2 days have 3x higher acceptance rates.',
-  'invoice': 'Here\'s your invoice summary:\n\n• Total invoiced: $7,700\n• Paid: $3,500 (45.5%)\n• Pending: $1,200\n• Overdue: $3,000 (INV-003)\n\n⚠️ Action needed: INV-003 for John Smith ($3,000) is overdue since Jan 10. I recommend sending a payment reminder today.\n\n💡 Tip: Set up automatic payment reminders 3 days before due date and on the due date to reduce overdue invoices by up to 40%.',
-  'customer': 'Customer insights:\n\n• 3 active customers, 1 lead, 1 inactive\n• Your most engaged customer: Emily Davis (Retail Plus) - monthly maintenance\n• New lead: Mike Chen (Startup.io) - needs mobile app ($20K opportunity)\n\n📊 Recommendation: Robert Wilson has been inactive since Dec 28. Consider reaching out with a special offer or project update to re-engage.\n\n💡 Tip: Schedule quarterly check-ins with all clients to maintain relationships and identify upsell opportunities.',
-  'report': 'Business Performance Summary (January):\n\n📈 Revenue: $8,400 (+38% vs December)\n💰 Profit Margin: ~64%\n👥 New Customers: 2\n📋 Quotations Sent: 3\n✅ Conversion Rate: 33%\n\nTop performing service: Web Development\nAverage project value: $5,833\n\n🎯 Goal tracking: You\'re on track to exceed Q1 targets by 15% if current trends continue.',
-  'email': 'Here\'s a professional follow-up email template:\n\n---\nSubject: Following Up on [Project Name] Proposal\n\nDear [Client Name],\n\nI hope this email finds you well. I wanted to follow up on the proposal I sent on [date] for [project name].\n\nI understand you may need time to review, but I wanted to ensure you have everything you need and address any questions that might have come up.\n\nThe proposal is valid until [date], and I\'m happy to discuss any adjustments to better fit your needs.\n\nWould you be available for a quick call this week?\n\nBest regards,\n[Your Name]\n---\n\n💡 Tip: Personalize the email with specific details from your last conversation to increase response rates by 25%.',
-  'help': 'I can help you with:\n\n📋 **Quotations** - "Show quotation summary" or "Help me create a quotation"\n💰 **Invoices** - "Invoice status" or "Who owes me money?"\n👥 **Customers** - "Customer insights" or "Who needs follow-up?"\n📊 **Reports** - "Show me my business report" or "How am I performing?"\n✉️ **Emails** - "Draft a follow-up email" or "Write a proposal"\n💡 **Advice** - "Business tips" or "How to improve conversion"\n\nJust type naturally and I\'ll assist you!',
-  'default': 'I understand you\'re asking about that. Let me analyze your business data to provide relevant insights.\n\nBased on your current situation:\n• You have opportunities worth $36,000 in your pipeline\n• Your collection rate could improve (currently 45.5%)\n• There are 3 pending follow-ups that need attention\n\nWould you like me to dive deeper into any specific area? I can help with quotations, invoices, customer management, reports, or drafting communications.'
-};
-
-function getAIResponse(input: string): string {
-  const lower = input.toLowerCase();
-  if (lower.includes('quotation') || lower.includes('quote') || lower.includes('proposal')) return aiResponses['quotation'];
-  if (lower.includes('invoice') || lower.includes('payment') || lower.includes('money') || lower.includes('owe')) return aiResponses['invoice'];
-  if (lower.includes('customer') || lower.includes('client') || lower.includes('follow') || lower.includes('contact')) return aiResponses['customer'];
-  if (lower.includes('report') || lower.includes('performance') || lower.includes('revenue') || lower.includes('analytics')) return aiResponses['report'];
-  if (lower.includes('email') || lower.includes('draft') || lower.includes('write') || lower.includes('template')) return aiResponses['email'];
-  if (lower.includes('help') || lower.includes('what can') || lower.includes('how')) return aiResponses['help'];
-  return aiResponses['default'];
-}
+import { useAppContext } from '../context/AppContext';
 
 export default function AIAssistant() {
-  const { chatMessages, addChatMessage, clearChat, subscription, updateSubscription } = useApp();
+  const { aiMessages, addAIMessage, subscription } = useAppContext();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+  }, [aiMessages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const aiResponses: Record<string, string> = {
+    'revenue': `📊 **Revenue Analysis**\n\nBased on your current data:\n\n• **Total Revenue (Paid):** $5,000\n• **Pending Invoices:** $4,000\n• **Overdue Amount:** $2,500\n\n**Recommendations:**\n1. Send a reminder for INV-2024-003 (Marketing Co.) which is overdue\n2. Follow up on INV-2024-002 (Design Studio) - sent 4 days ago\n3. Consider offering early payment discounts to improve cash flow\n\nWould you like me to draft a follow-up email for the overdue invoice?`,
+    'customer': `👥 **Customer Insights**\n\nHere's your customer overview:\n\n• **Active Customers:** 3\n• **Leads:** 1 (Mike Chen - Startup.io)\n• **Inactive:** 1 (Wilson Consulting)\n\n**AI Recommendations:**\n1. 🎯 **Priority Lead:** Mike Chen from Startup.io has a $15,000 quotation pending - schedule a follow-up call this week\n2. 📧 **Re-engagement:** Robert Wilson hasn't been active since November - consider a "We miss you" campaign\n3. 💡 **Upsell Opportunity:** TechCorp Inc. accepted your web dev quote - they may need ongoing maintenance services\n\nShall I create follow-up tasks for these recommendations?`,
+    'quotation': `📝 **Quotation Strategy**\n\nYour quotation performance:\n\n• **Total Quotes:** 4\n• **Accepted:** 1 (25% conversion rate)\n• **Pending:** 1 (QT-2024-002 to Design Studio)\n• **Draft:** 1 (QT-2024-003 for Startup.io - $15,000)\n• **Rejected:** 1\n\n**Tips to improve conversion:**\n1. Send QT-2024-003 ASAP - the longer a quote sits, the lower the conversion\n2. For the rejected Marketing Co. quote, consider asking for feedback\n3. Average quote value is $7,625 - competitive for your market\n\nWould you like me to help draft a follow-up for the pending quotation?`,
+    'default': `I'd be happy to help with your business! Here are some things I can assist with:\n\n🔹 **Revenue Analysis** - Ask about your financial performance\n🔹 **Customer Insights** - Get recommendations for customer management\n🔹 **Quotation Help** - Tips to improve your quote conversion\n🔹 **Invoice Follow-ups** - Draft reminder emails\n🔹 **Business Strategy** - Get AI-powered business advice\n\nTry asking me something like:\n• "How's my revenue looking?"\n• "Which customers need attention?"\n• "Help me improve my quotation conversion"\n• "Draft a follow-up for overdue invoices"`
+  };
 
-    if (subscription.aiCreditsUsed >= subscription.aiCreditsLimit) {
-      alert('You have used all your AI credits for this period. Please upgrade your plan or wait for credits to reset.');
-      return;
+  const getAIResponse = (message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes('revenue') || lower.includes('money') || lower.includes('income') || lower.includes('financial')) return aiResponses.revenue;
+    if (lower.includes('customer') || lower.includes('client') || lower.includes('lead')) return aiResponses.customer;
+    if (lower.includes('quot') || lower.includes('proposal') || lower.includes('bid')) return aiResponses.quotation;
+    if (lower.includes('invoice') || lower.includes('payment') || lower.includes('overdue') || lower.includes('reminder')) {
+      return `📧 **Invoice Follow-up Draft**\n\nHere's a professional reminder email for the overdue invoice:\n\n---\n**Subject:** Friendly Reminder - Invoice INV-2024-003\n\nDear Marketing Co.,\n\nI hope this message finds you well. I'm writing to kindly remind you that Invoice INV-2024-003 for $2,500 (Monthly Retainer) was due on March 1st, 2024.\n\nIf you've already processed the payment, please disregard this notice. Otherwise, we'd appreciate your prompt attention to this matter.\n\nPlease don't hesitate to reach out if you have any questions.\n\nBest regards,\nYour Business\n---\n\nWould you like me to adjust the tone or create reminders for other invoices?`;
     }
+    if (lower.includes('help') || lower.includes('what can you')) return aiResponses.default;
+    return `Great question! Based on your business data, here's what I can tell you:\n\n📈 You have **${aiMessages.length}** conversations in this session\n💼 You're managing **5 customers** with **4 active quotations**\n💰 Your total invoiced amount is **$17,000**\n\n**Quick Tip:** Your follow-up completion rate could be improved. You have ${aiMessages.length > 0 ? '4' : '5'} pending follow-ups that need attention this week.\n\nIs there something specific about your business you'd like me to analyze? I can help with:\n• Revenue optimization\n• Customer retention strategies\n• Pricing recommendations\n• Workflow automation suggestions`;
+  };
 
-    const userMessage = { id: String(Date.now()), role: 'user' as const, content: input, timestamp: new Date().toISOString() };
-    addChatMessage(userMessage);
+  const handleSend = () => {
+    if (!input.trim()) return;
+    addAIMessage({ role: 'user', content: input, timestamp: new Date() });
     setInput('');
     setIsTyping(true);
-    updateSubscription({ aiCreditsUsed: subscription.aiCreditsUsed + 1 });
 
-    // Simulate AI thinking
     setTimeout(() => {
       const response = getAIResponse(input);
-      addChatMessage({ id: String(Date.now() + 1), role: 'assistant', content: response, timestamp: new Date().toISOString() });
+      addAIMessage({ role: 'assistant', content: response, timestamp: new Date() });
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }, 1500);
   };
 
   const suggestions = [
-    'Show quotation summary',
-    'Invoice status',
-    'Customer insights',
-    'Draft a follow-up email',
-    'Business performance report'
+    "How's my revenue looking?",
+    "Which customers need attention?",
+    "Help me with overdue invoices",
+    "Improve my quotation conversion"
   ];
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h5 className="fw-bold mb-1">AI Business Assistant</h5>
-          <p className="text-muted small mb-0">Get intelligent insights and recommendations for your business</p>
-        </div>
-        <button className="btn btn-outline-secondary btn-sm" onClick={clearChat}>
-          <i className="bi bi-arrow-clockwise"></i> Reset Chat
-        </button>
-      </div>
-
-      <div className="card table-card">
-        <div className="ai-chat-container">
-          {/* Messages */}
-          <div className="chat-messages">
-            {chatMessages.map(msg => (
-              <div key={msg.id} className={`d-flex ${msg.role === 'user' ? 'justify-content-end' : 'justify-content-start'} mb-3`}>
-                <div className={`chat-message ${msg.role}`}>
-                  {msg.role === 'assistant' && <div className="d-flex align-items-center gap-1 mb-1"><i className="bi bi-robot"></i><small className="fw-bold">AI Assistant</small></div>}
-                  <div style={{ whiteSpace: 'pre-line' }}>{msg.content}</div>
-                  <small className={`d-block mt-1 ${msg.role === 'user' ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.7rem' }}>
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </small>
+      <div className="row">
+        <div className="col-lg-9">
+          <div className="card-custom" style={{ height: 'calc(100vh - 180px)' }}>
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <div className="d-flex align-items-center gap-2">
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className="fas fa-robot text-white" style={{ fontSize: '0.8rem' }}></i>
+                </div>
+                <div>
+                  <strong>BizAI Assistant</strong>
+                  <small className="text-muted d-block" style={{ fontSize: '0.7rem' }}>Powered by AI • {subscription.aiCredits} credits remaining</small>
                 </div>
               </div>
-            ))}
-            {isTyping && (
-              <div className="d-flex justify-content-start mb-3">
-                <div className="chat-message assistant">
-                  <div className="d-flex align-items-center gap-2">
-                    <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
-                    <small>AI is thinking...</small>
+              <button className="btn btn-sm btn-outline-secondary" onClick={() => { }}>
+                <i className="fas fa-redo"></i>
+              </button>
+            </div>
+            
+            {/* Messages */}
+            <div className="ai-messages" style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+              {aiMessages.length === 0 && (
+                <div className="text-center py-5">
+                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                    <i className="fas fa-robot text-white fa-2x"></i>
+                  </div>
+                  <h5>Hello! I'm your AI Business Assistant</h5>
+                  <p className="text-muted mb-4">I can help you analyze your business data, draft communications, and provide strategic recommendations.</p>
+                  <div className="d-flex flex-wrap gap-2 justify-content-center">
+                    {suggestions.map((s, i) => (
+                      <button key={i} className="btn btn-sm btn-outline-primary" onClick={() => { setInput(s); }}>
+                        {s}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+              )}
+              {aiMessages.map((msg: any, idx: number) => (
+                <div key={idx} className={`ai-message ${msg.role}`}>
+                  <div className="avatar" style={{ background: msg.role === 'assistant' ? 'linear-gradient(135deg, #4f46e5, #06b6d4)' : '#64748b' }}>
+                    <i className={`fas ${msg.role === 'assistant' ? 'fa-robot' : 'fa-user'} text-white`} style={{ fontSize: '0.8rem' }}></i>
+                  </div>
+                  <div className="bubble" style={{ whiteSpace: 'pre-wrap' }}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="ai-message assistant">
+                  <div className="avatar" style={{ background: 'linear-gradient(135deg, #4f46e5, #06b6d4)' }}>
+                    <i className="fas fa-robot text-white" style={{ fontSize: '0.8rem' }}></i>
+                  </div>
+                  <div className="bubble">
+                    <div className="typing-indicator">
+                      <span></span><span></span><span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef}></div>
+            </div>
 
-          {/* Suggestions */}
-          {chatMessages.length <= 1 && (
-            <div className="px-3 pb-2">
-              <small className="text-muted d-block mb-2">Quick suggestions:</small>
-              <div className="d-flex flex-wrap gap-2">
-                {suggestions.map((s, i) => (
-                  <button key={i} className="btn btn-sm btn-outline-primary rounded-pill" onClick={() => setInput(s)}>
-                    {s}
-                  </button>
-                ))}
+            {/* Input */}
+            <div className="p-3 border-top">
+              <div className="d-flex gap-2">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ask me anything about your business..."
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyPress={e => e.key === 'Enter' && handleSend()}
+                />
+                <button className="btn btn-primary-custom" onClick={handleSend} disabled={!input.trim()}>
+                  <i className="fas fa-paper-plane"></i>
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        </div>
 
-          {/* Input */}
-          <div className="chat-input-area">
-            <form onSubmit={handleSend} className="d-flex gap-2">
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Ask me anything about your business..."
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                disabled={isTyping}
-              />
-              <button type="submit" className="btn btn-primary px-3" disabled={!input.trim() || isTyping}>
-                <i className="bi bi-send"></i>
-              </button>
-            </form>
-            <div className="d-flex justify-content-between mt-2">
-              <small className="text-muted">
-                <i className="bi bi-lightning-charge"></i> {subscription.aiCreditsLimit - subscription.aiCreditsUsed} credits remaining
-              </small>
-              <small className="text-muted">Powered by BizAI</small>
+        {/* Sidebar */}
+        <div className="col-lg-3">
+          <div className="card-custom mb-3">
+            <div className="card-header">AI Capabilities</div>
+            <div className="p-3">
+              {[
+                { icon: 'fas fa-chart-line', label: 'Revenue Analysis', desc: 'Financial insights & trends' },
+                { icon: 'fas fa-users', label: 'Customer Intelligence', desc: 'Behavior & retention tips' },
+                { icon: 'fas fa-file-alt', label: 'Document Drafting', desc: 'Emails, proposals, reports' },
+                { icon: 'fas fa-lightbulb', label: 'Business Strategy', desc: 'Growth recommendations' },
+                { icon: 'fas fa-tasks', label: 'Task Automation', desc: 'Workflow optimization' },
+              ].map((item, idx) => (
+                <div key={idx} className="d-flex align-items-center gap-2 mb-3">
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className={item.icon} style={{ color: 'var(--primary)', fontSize: '0.8rem' }}></i>
+                  </div>
+                  <div>
+                    <small className="fw-bold d-block">{item.label}</small>
+                    <small className="text-muted" style={{ fontSize: '0.7rem' }}>{item.desc}</small>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card-custom">
+            <div className="card-header">Quick Prompts</div>
+            <div className="p-3">
+              {suggestions.map((s, i) => (
+                <button key={i} className="btn btn-sm btn-outline-secondary w-100 mb-2 text-start" onClick={() => setInput(s)}>
+                  <i className="fas fa-chevron-right me-2" style={{ fontSize: '0.6rem' }}></i>{s}
+                </button>
+              ))}
             </div>
           </div>
         </div>
