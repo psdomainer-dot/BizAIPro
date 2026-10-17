@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import Layout from './components/Layout';
+import LandingPage from './pages/LandingPage';
+import InstallationWizard from './pages/InstallationWizard';
 import Dashboard from './pages/Dashboard';
 import Quotations from './pages/Quotations';
 import Invoices from './pages/Invoices';
@@ -11,8 +13,19 @@ import AIAssistant from './pages/AIAssistant';
 import Subscription from './pages/Subscription';
 import Settings from './pages/Settings';
 
+type AppView = 'landing' | 'install' | 'app';
+
 function AppContent() {
   const { currentPage } = useAppContext();
+  const [view, setView] = useState<AppView>('landing');
+
+  if (view === 'landing') {
+    return <LandingPage onEnter={() => setView('install')} />;
+  }
+
+  if (view === 'install') {
+    return <InstallationWizard onComplete={() => setView('app')} />;
+  }
 
   const renderPage = () => {
     switch (currentPage) {

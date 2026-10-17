@@ -8,6 +8,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { currentPage, setCurrentPage } = useAppContext();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [notifOpen, setNotifOpen] = React.useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-th-large' },
@@ -19,6 +20,14 @@ export default function Layout({ children }: LayoutProps) {
     { id: 'ai-assistant', label: 'AI Assistant', icon: 'fas fa-robot' },
     { id: 'subscription', label: 'Subscription', icon: 'fas fa-crown' },
     { id: 'settings', label: 'Settings', icon: 'fas fa-cog' },
+  ];
+
+  const notifications = [
+    { icon: 'fas fa-file-invoice-dollar', color: '#10b981', text: 'Invoice INV-2024-001 has been paid', time: '2m ago', unread: true },
+    { icon: 'fas fa-exclamation-triangle', color: '#ef4444', text: 'Invoice INV-2024-003 is overdue', time: '1h ago', unread: true },
+    { icon: 'fas fa-user-plus', color: '#06b6d4', text: 'New lead: Mike Chen from Startup.io', time: '3h ago', unread: true },
+    { icon: 'fas fa-robot', color: '#8b5cf6', text: 'AI: Revenue trend analysis available', time: '5h ago', unread: false },
+    { icon: 'fas fa-file-invoice', color: '#4f46e5', text: 'Quotation QT-2024-002 viewed by client', time: '1d ago', unread: false },
   ];
 
   return (
@@ -46,6 +55,9 @@ export default function Layout({ children }: LayoutProps) {
             >
               <i className={item.icon}></i>
               {item.label}
+              {item.id === 'followups' && (
+                <span className="badge bg-danger ms-auto" style={{ fontSize: '0.65rem' }}>4</span>
+              )}
             </a>
           ))}
         </nav>
@@ -79,12 +91,51 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </div>
           <div className="d-flex align-items-center gap-3">
-            <button className="btn btn-light btn-sm position-relative">
-              <i className="fas fa-bell"></i>
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem' }}>3</span>
-            </button>
+            {/* Search */}
+            <div className="d-none d-lg-flex input-group" style={{ width: 220 }}>
+              <span className="input-group-text bg-white border-end-0" style={{ borderRight: 'none' }}>
+                <i className="fas fa-search text-muted" style={{ fontSize: '0.8rem' }}></i>
+              </span>
+              <input type="text" className="form-control border-start-0" placeholder="Search..." style={{ fontSize: '0.85rem' }} />
+            </div>
+
+            {/* Notifications */}
+            <div className="position-relative">
+              <button className="btn btn-light btn-sm position-relative" onClick={() => setNotifOpen(!notifOpen)}>
+                <i className="fas fa-bell"></i>
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.6rem' }}>3</span>
+              </button>
+              {notifOpen && (
+                <div className="position-absolute end-0 mt-2" style={{ width: 340, zIndex: 1050, background: '#fff', borderRadius: 12, boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid #e2e8f0' }}>
+                  <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <strong style={{ fontSize: '0.9rem' }}>Notifications</strong>
+                    <span className="badge bg-primary" style={{ fontSize: '0.7rem' }}>3 new</span>
+                  </div>
+                  <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                    {notifications.map((n, idx) => (
+                      <div key={idx} className={`p-3 border-bottom ${n.unread ? 'bg-light' : ''}`} style={{ cursor: 'pointer' }}>
+                        <div className="d-flex gap-2">
+                          <div style={{ width: 32, height: 32, borderRadius: '50%', background: `${n.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <i className={n.icon} style={{ color: n.color, fontSize: '0.75rem' }}></i>
+                          </div>
+                          <div>
+                            <p className="mb-0" style={{ fontSize: '0.8rem' }}>{n.text}</p>
+                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>{n.time}</small>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-2 text-center">
+                    <a href="#" className="text-decoration-none" style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>View all notifications</a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* User */}
             <div className="d-flex align-items-center gap-2">
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #4f46e5, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span className="text-white fw-bold" style={{ fontSize: '0.85rem' }}>A</span>
               </div>
               <span className="d-none d-lg-inline fw-medium" style={{ fontSize: '0.9rem' }}>Admin User</span>
@@ -104,6 +155,15 @@ export default function Layout({ children }: LayoutProps) {
           className="position-fixed top-0 start-0 w-100 h-100"
           style={{ background: 'rgba(0,0,0,0.5)', zIndex: 999 }}
           onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Click outside to close notifications */}
+      {notifOpen && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100"
+          style={{ zIndex: 1040 }}
+          onClick={() => setNotifOpen(false)}
         ></div>
       )}
     </div>
